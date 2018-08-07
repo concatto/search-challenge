@@ -19,6 +19,7 @@ const styles = {
   tape: {
     borderRight: border,
     borderBottom: border,
+    marginBottom: 20,
   }
 };
 

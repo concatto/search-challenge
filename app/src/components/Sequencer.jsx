@@ -1,8 +1,13 @@
 import React from 'react';
 import ChallengeView from './ChallengeView';
+import ChartDialog from './ChartDialog';
 import Typography from '@material-ui/core/Typography';
 import Button from '@material-ui/core/Button';
 import { generateNumbers, formatTime } from '../utils';
+
+const MAX_VALUE = 400;
+const CHALLENGES = 6;
+const NUMBER_COUNT = 140;
 
 class Sequencer extends React.Component {
   constructor(props) {
@@ -13,15 +18,20 @@ class Sequencer extends React.Component {
     };
 
     setInterval(() => {
-      const elapsed = new Date().getTime() - this.state.start;
-      this.setState({elapsed});
+      if (this.state.numbers !== undefined) {
+        const elapsed = new Date().getTime() - this.state.start;
+        this.setState({elapsed});
+      }
     }, 5);
   }
 
-  restartChronometer(shouldSort) {
-    const max = 500;
-    const goal = Math.ceil(Math.random() * max);
-    const numbers = generateNumbers(100, max, shouldSort, goal);
+  restartChronometer(shouldSort, reverse = false) {
+    const goal = Math.ceil(Math.random() * MAX_VALUE);
+    const numbers = generateNumbers(NUMBER_COUNT, MAX_VALUE, shouldSort, goal);
+
+    if (reverse === true) {
+      numbers.reverse();
+    }
 
     this.setState({
       start: new Date().getTime(),
@@ -39,27 +49,59 @@ class Sequencer extends React.Component {
     alert("Parabéns!");
     console.log(newResults);
 
-    this.restartChronometer(newResults.length % 2 === 1);
+    if (newResults.length < CHALLENGES) {
+      this.restartChronometer(newResults.length % 2 === 1, newResults.length % 3 === 0);
+    }
+  }
+
+  reset() {
+    this.setState({
+      numbers: undefined,
+      results: [],
+      elapsed: 0,
+    });
   }
 
   render() {
+    const running = this.state.numbers !== undefined;
+    const finished = this.state.results.length === CHALLENGES;
+
     return (
       <div>
-        {this.state.numbers !== undefined &&
-          <ChallengeView
-            goal={this.state.goal}
-            numbers={this.state.numbers}
-            onSuccess={() => this.handleAdvancement()}
+        {!finished &&
+          <div>
+            {running &&
+              <ChallengeView
+                goal={this.state.goal}
+                numbers={this.state.numbers}
+                onSuccess={() => this.handleAdvancement()}
+              />
+            }
+
+            <Typography variant="display1" style={{margin: 20}}>
+              {formatTime(this.state.elapsed)}
+            </Typography>
+
+            {!running &&
+              <Button onClick={() => this.restartChronometer(false)} color="primary" size="large" variant="raised">
+                Iniciar
+              </Button>
+            }
+
+            {running &&
+              <Typography variant="headline">
+                {this.state.results.length + 1} / {CHALLENGES}
+              </Typography>
+            }
+          </div>
+        }
+        {finished &&
+          <ChartDialog
+            results={this.state.results}
+            open={finished}
+            onRestart={() => this.reset()}
           />
         }
-
-        <Typography variant="display1">
-          {formatTime(this.state.elapsed)}
-        </Typography>
-
-        <Button onClick={() => this.restartChronometer(false)}>
-          Iniciar
-        </Button>
       </div>
     )
   }
